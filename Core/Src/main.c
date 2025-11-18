@@ -33,6 +33,7 @@
 #include "app_manager.h"
 #include "dwin_driver.h"
 #include "cli_driver.h"
+#include "cli_controller.h"
 #include <stdio.h>
 #include <string.h>
 /* USER CODE END Includes */
@@ -112,7 +113,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	MX_USB_PCD_Init();
 	App_Manager_Init();
-
+	CLI_Controller_Init();
 	App_Manager_Run_Self_Diagnostics(PRINCIPAL);
   /* USER CODE END 2 */
 

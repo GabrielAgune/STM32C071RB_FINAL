@@ -38,7 +38,7 @@ stm32c071rb_final/retarget.o: ..\Core\Src\retarget.c \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_usb.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h \
-  ..\USBX\App\ux_device_cdc_acm.h \
+  ..\Core\Inc\cli_driver.h ..\USBX\App\ux_device_cdc_acm.h \
   ..\Middlewares\ST\usbx\common\core\inc\ux_api.h \
   ..\Middlewares\ST\usbx\ports\generic\inc\ux_port.h \
   ..\USBX\App\ux_user.h \

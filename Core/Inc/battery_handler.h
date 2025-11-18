@@ -5,7 +5,7 @@
 #include "i2c.h"
 
 // Define a capacidade da sua bateria aqui para fácil configuração
-#define BATTERY_CAPACITY_MAH 210
+#define BATTERY_CAPACITY_MAH 2600
 
 /**
  * @brief Inicializa o handler da bateria, o driver do BQ25622 e o módulo SOC.

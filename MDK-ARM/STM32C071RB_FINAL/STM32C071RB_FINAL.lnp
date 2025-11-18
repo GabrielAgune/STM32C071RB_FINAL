@@ -146,6 +146,7 @@
 "stm32c071rb_final\gxxx_equacoes.o"
 "stm32c071rb_final\servo_controle.o"
 "stm32c071rb_final\relato.o"
+"stm32c071rb_final\cli_controller.o"
 "stm32c071rb_final\autenticacao_handler.o"
 "stm32c071rb_final\battery_handler.o"
 "stm32c071rb_final\display_handler.o"

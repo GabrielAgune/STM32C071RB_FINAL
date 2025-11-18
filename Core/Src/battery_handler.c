@@ -127,11 +127,11 @@ static void update_battery_screen_data(void)
     BQ25622_ChargeStatus_t status = bq_soc_get_last_chg_status();
 
     // Converte para inteiros para enviar ao DWIN (formato com 2 casas decimais)
-    int16_t vbus_dwin = (int16_t)(vbus * 1000.0f); // Ex: 5.12V -> 512
-    int16_t vbat_dwin = (int16_t)(vbat * 1000.0f); // Ex: 3.85V -> 385
+    int16_t vbus_dwin = (int16_t)(vbus * 1000.0f);  // Ex: 5.12V -> 512
+    int16_t vbat_dwin = (int16_t)(vbat * 1000.0f);  // Ex: 3.85V -> 385
     int16_t ibat_dwin = (int16_t)(ibat * 10000.0f); // Ex: -0.120A -> -120 (mA)
-    int16_t tdie_dwin = (int16_t)(tdie * 10.0f); // Ex: 35.5°C -> 355
-    int16_t perc_dwin = (int16_t)(perc * 10.0f); // Ex: 97.5% -> 975
+    int16_t tdie_dwin = (int16_t)(tdie * 10.0f);    // Ex: 35.5°C -> 355
+    int16_t perc_dwin = (int16_t)(perc * 10.0f);    // Ex: 97.5% -> 975
 		
     // Envia os valores numéricos para os VPs que você definiu em dwin_driver.h
     DWIN_Driver_WriteInt32(VP_VBUS, vbus_dwin);
