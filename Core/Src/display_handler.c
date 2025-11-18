@@ -1,0 +1,560 @@
+/*******************************************************************************
+ * @file        display_handler.c
+ * @brief       Implementação do Handler de Display.
+ * @author      -
+ * @details     Contém as FSMs não-bloqueantes para a sequência de medição,
+ *              atualizações periódicas e feedback visual de salvamento.
+ ******************************************************************************/
+
+#include "display_handler.h"
+
+#include "dwin_driver.h"
+#include "controller.h"
+#include "gerenciador_configuracoes.h"
+#include "medicao_handler.h"
+#include "rtc_driver.h"
+#include "temp_sensor.h"
+#include "dwin_parser.h"
+#include "relato.h"
+
+//================================================================================
+// Definições, Enums e Variáveis Estáticas
+//================================================================================
+
+#define DWIN_VP_ENTRADA_TELA      0x0050  // Valor padrão enviado pelo DWIN na tela de configuração
+#define DWIN_VP_ENTRADA_SERVICO   0x0000  // Valor padrão enviado pelo DWIN na tela de serviço
+
+// --- Máquina de Estados para a Sequência de Medição ---
+typedef enum {
+    MEDE_STATE_IDLE = 0,
+    MEDE_STATE_ENCHE_CAMARA,
+    MEDE_STATE_AJUSTANDO,
+    MEDE_STATE_RASPA_CAMARA,
+    MEDE_STATE_PESO_AMOSTRA,
+    MEDE_STATE_TEMP_SAMPLE,
+    MEDE_STATE_UMIDADE,
+    MEDE_STATE_MOSTRA_RESULTADO
+} MedeState_t;
+
+static MedeState_t s_mede_state       = MEDE_STATE_IDLE;
+static uint32_t    s_mede_last_tick   = 0U;
+static const uint32_t MEDE_INTERVAL_MS = 1000U;
+
+// --- FSM de Atualização do Monitor ---
+static uint32_t    s_monitor_last_tick          = 0U;
+static const uint32_t MONITOR_UPDATE_INTERVAL_MS = 1000U;
+static uint8_t     s_temp_update_counter        = 0U;
+static const uint8_t TEMP_UPDATE_PERIOD_SECONDS = 5U;
+
+// --- Atualização do Relógio ---
+static uint32_t    s_clock_last_tick            = 0U;
+static const uint32_t CLOCK_UPDATE_INTERVAL_MS  = 1000U;
+
+// --- FSM de Feedback de Salvamento ---
+typedef enum {
+    FB_STATE_IDLE = 0,          // Ocioso
+    FB_STATE_SHOW_SAVING,       // Mostra "Salvando..."
+    FB_STATE_WAIT_SAVE_DONE,    // Espera FSM do Config terminar
+} FeedbackState_t;
+
+static FeedbackState_t s_feedback_state          = FB_STATE_IDLE;
+static uint16_t        s_feedback_return_screen  = PRINCIPAL;
+static char            s_feedback_success_msg[50] = {0};
+static uint32_t        s_feedback_timeout_tick   = 0U;
+static const uint32_t  FEEDBACK_TIMEOUT_MS       = 5000U; // 5s de timeout
+
+// --- Estado do módulo ---
+static bool s_printing_enabled = true;
+
+//================================================================================
+// Protótipos de Funções Privadas
+//================================================================================
+
+static void ProcessFeedbackFSM(void);
+static void ProcessMeasurementSequenceFSM(void);
+static void UpdateMonitorScreen(void);
+static void UpdateClockOnMainScreen(void);
+
+//================================================================================
+// Implementação das Funções Públicas
+//================================================================================
+
+void DisplayHandler_Init(void)
+{
+    s_mede_state          = MEDE_STATE_IDLE;
+    s_printing_enabled    = true;
+    s_feedback_state      = FB_STATE_IDLE;
+    s_feedback_return_screen = PRINCIPAL;
+    s_temp_update_counter = 0;
+}
+
+void DisplayHandler_Process(void)
+{
+    // FSM de Feedback é prioritária
+    ProcessFeedbackFSM();
+
+    // As demais FSMs só rodam se não houver feedback ativo
+    if (s_feedback_state == FB_STATE_IDLE)
+    {
+        ProcessMeasurementSequenceFSM();
+        UpdateMonitorScreen();
+        UpdateClockOnMainScreen();
+    }
+}
+
+bool DisplayHandler_StartSaveFeedback(uint16_t return_screen, const char* success_msg)
+{
+    if (s_feedback_state != FB_STATE_IDLE)
+    {
+        return false;
+    }
+
+    printf("Display: Iniciando feedback de salvamento. Retorno: %u\r\n", return_screen);
+
+    Gerenciador_Config_Marcar_Como_Pendente();
+
+    s_feedback_return_screen = return_screen;
+    memset(s_feedback_success_msg, 0, sizeof(s_feedback_success_msg));
+    if (success_msg != NULL)
+    {
+        strncpy(s_feedback_success_msg, success_msg, sizeof(s_feedback_success_msg) - 1);
+    }
+
+    s_feedback_state = FB_STATE_SHOW_SAVING;
+    return true;
+}
+
+void Display_StartMeasurementSequence(void)
+{
+    if (s_mede_state == MEDE_STATE_IDLE)
+    {
+        printf("DISPLAY: Iniciando sequencia de medicao...\r\n");
+        s_mede_state    = MEDE_STATE_ENCHE_CAMARA;
+        s_mede_last_tick = HAL_GetTick();
+        Controller_SetScreen(MEDE_ENCHE_CAMARA);
+    }
+}
+
+void Display_OFF(uint16_t received_value)
+{
+    if (received_value == 0x0010)
+    {
+        Controller_SetScreen(SYSTEM_STANDBY);
+        DWIN_Driver_WriteRawBytes(CMD_AJUSTAR_BACKLIGHT_10, sizeof(CMD_AJUSTAR_BACKLIGHT_10));
+    }
+    else
+    {
+        Controller_SetScreen(PRINCIPAL);
+        DWIN_Driver_WriteRawBytes(CMD_AJUSTAR_BACKLIGHT_100, sizeof(CMD_AJUSTAR_BACKLIGHT_100));
+    }
+}
+
+void Display_ProcessPrintEvent(uint16_t received_value)
+{
+    if (!s_printing_enabled)
+    {
+        return;
+    }
+
+    if (received_value == 0x0000)
+    {
+        // Mostrar resultado na tela
+        Config_Grao_t dados_grao;
+        uint8_t indice_grao;
+        Gerenciador_Config_Get_Grao_Ativo(&indice_grao);
+        Gerenciador_Config_Get_Dados_Grao(indice_grao, &dados_grao);
+
+        DadosMedicao_t dados_medicao;
+        Medicao_Get_UltimaMedicao(&dados_medicao);
+
+        uint16_t casas_decimais = Gerenciador_Config_Get_NR_Decimals();
+
+        DWIN_Driver_WriteString(GRAO_A_MEDIR, dados_grao.nome, MAX_NOME_GRAO_LEN);
+        DWIN_Driver_WriteInt(CURVA, (int16_t)dados_grao.id_curva);
+        DWIN_Driver_WriteInt(UMI_MIN, (int16_t)(dados_grao.umidade_min * 10));
+        DWIN_Driver_WriteInt(UMI_MAX, (int16_t)(dados_grao.umidade_max * 10));
+
+        if (casas_decimais == 1)
+        {
+            DWIN_Driver_WriteInt(UMIDADE_1_CASA, (int16_t)(dados_medicao.Umidade * 10.0f));
+            Controller_SetScreen(MEDE_RESULT_01);
+        }
+        else
+        {
+            DWIN_Driver_WriteInt(UMIDADE_2_CASAS, (int16_t)(dados_medicao.Umidade * 100.0f));
+            Controller_SetScreen(MEDE_RESULT_02);
+        }
+    }
+    else
+    {
+        // Impressão física
+        Relatorio_Printer();
+    }
+}
+
+void Display_SetRepeticoes(uint16_t received_value)
+{
+    char buffer[40];
+
+    if (received_value == DWIN_VP_ENTRADA_TELA)
+    {
+        uint16_t atual = Gerenciador_Config_Get_NR_Repetition();
+        sprintf(buffer, "Atual NR_Repetition: %u", atual);
+        DWIN_Driver_WriteString(VP_MESSAGES, buffer, strlen(buffer));
+        Controller_SetScreen(TELA_SETUP_REPETICOES);
+    }
+    else
+    {
+        Gerenciador_Config_Set_NR_Repetitions(received_value);
+        sprintf(buffer, "Repeticoes: %u", received_value);
+        DisplayHandler_StartSaveFeedback(TELA_CONFIGURAR, buffer);
+    }
+}
+
+void Display_SetDecimals(uint16_t received_value)
+{
+    char buffer[40];
+
+    if (received_value == DWIN_VP_ENTRADA_TELA)
+    {
+        uint16_t atual = Gerenciador_Config_Get_NR_Decimals();
+        sprintf(buffer, "Atual NR_Decimals: %u", atual);
+        DWIN_Driver_WriteString(VP_MESSAGES, buffer, strlen(buffer));
+        Controller_SetScreen(TELA_SET_DECIMALS);
+    }
+    else
+    {
+        Gerenciador_Config_Set_NR_Decimals(received_value);
+        sprintf(buffer, "Casas decimais: %u", received_value);
+        DisplayHandler_StartSaveFeedback(TELA_CONFIGURAR, buffer);
+    }
+}
+
+void Display_SetUser(const uint8_t* dwin_data, uint16_t len, uint16_t received_value)
+{
+    char buffer_display[50];
+
+    if (received_value == DWIN_VP_ENTRADA_TELA)
+    {
+        char nome_atual[21] = {0};
+        Gerenciador_Config_Get_Usuario(nome_atual, sizeof(nome_atual));
+        sprintf(buffer_display, "Atual Usuario: %s", nome_atual);
+        DWIN_Driver_WriteString(VP_MESSAGES, buffer_display, strlen(buffer_display));
+        Controller_SetScreen(TELA_USER);
+    }
+    else
+    {
+        char novo_nome[21] = {0};
+        const uint8_t* payload    = &dwin_data[6];
+        uint16_t       payload_len = len - 6;
+
+        if (DWIN_Parse_String_Payload_Robust(payload, payload_len,
+                                             novo_nome, sizeof(novo_nome)) &&
+            strlen(novo_nome) > 0)
+        {
+            Gerenciador_Config_Set_Usuario(novo_nome);
+            sprintf(buffer_display, "Usuario: %s", novo_nome);
+            DisplayHandler_StartSaveFeedback(TELA_CONFIGURAR, buffer_display);
+        }
+    }
+}
+
+void Display_SetCompany(const uint8_t* dwin_data, uint16_t len, uint16_t received_value)
+{
+    char buffer_display[50];
+
+    if (received_value == DWIN_VP_ENTRADA_TELA)
+    {
+        char empresa_atual[21] = {0};
+        Gerenciador_Config_Get_Company(empresa_atual, sizeof(empresa_atual));
+        sprintf(buffer_display, "Atual Empresa: %s", empresa_atual);
+        DWIN_Driver_WriteString(VP_MESSAGES, buffer_display, strlen(buffer_display));
+        Controller_SetScreen(TELA_COMPANY);
+    }
+    else
+    {
+        char nova_empresa[21] = {0};
+        const uint8_t* payload    = &dwin_data[6];
+        uint16_t       payload_len = len - 6;
+
+        if (DWIN_Parse_String_Payload_Robust(payload, payload_len,
+                                             nova_empresa, sizeof(nova_empresa)) &&
+            strlen(nova_empresa) > 0)
+        {
+            Gerenciador_Config_Set_Company(nova_empresa);
+            sprintf(buffer_display, "Empresa: %s", nova_empresa);
+            DisplayHandler_StartSaveFeedback(TELA_CONFIGURAR, buffer_display);
+        }
+    }
+}
+
+void Display_Adj_Capa(uint16_t received_value)
+{
+    (void)received_value;
+    const char* msg = "AdjustFrequency: 3000.0KHz+/-2.0";
+    DWIN_Driver_WriteString(VP_MESSAGES, msg, strlen(msg));
+    Controller_SetScreen(TELA_ADJUST_CAPA);
+}
+
+void Display_ShowAbout(void)
+{
+    const char* msg = "G620_Teste_Gab";
+    DWIN_Driver_WriteString(VP_MESSAGES, msg, strlen(msg));
+    Controller_SetScreen(TELA_ABOUT_SYSTEM);
+}
+
+void Display_ShowModel(void)
+{
+    const char* msg = "G620_Teste_Gab";
+    DWIN_Driver_WriteString(VP_MESSAGES, msg, strlen(msg));
+    Controller_SetScreen(TELA_MODEL_OEM);
+}
+
+void Display_Preset(uint16_t received_value)
+{
+    if (received_value == DWIN_VP_ENTRADA_SERVICO)
+    {
+        const char* msg = "Preset redefine os ajustes!";
+        DWIN_Driver_WriteString(VP_MESSAGES, msg, strlen(msg));
+        Controller_SetScreen(TELA_PRESET_PRODUCT);
+    }
+    else
+    {
+        Carregar_Configuracao_Padrao();
+        DisplayHandler_StartSaveFeedback(TELA_SERVICO, "Preset completo!");
+    }
+}
+
+void Display_Set_Serial(const uint8_t* dwin_data, uint16_t len, uint16_t received_value)
+{
+    char buffer_display[50] = {0};
+
+    if (received_value == DWIN_VP_ENTRADA_SERVICO)
+    {
+        Controller_SetScreen(TELA_SET_SERIAL);
+        char serial_atual[17] = {0};
+        Gerenciador_Config_Get_Serial(serial_atual, sizeof(serial_atual));
+        sprintf(buffer_display, "%s", serial_atual);
+        DWIN_Driver_WriteString(VP_MESSAGES, buffer_display, strlen(buffer_display));
+    }
+    else
+    {
+        char novo_serial[17] = {0};
+        const uint8_t* payload    = &dwin_data[5];
+        uint16_t       payload_len = len - 5;
+
+        if (DWIN_Parse_String_Payload_Robust(payload, payload_len,
+                                             novo_serial, sizeof(novo_serial)) &&
+            strlen(novo_serial) > 0)
+        {
+            printf("Display Handler: Recebido novo serial: '%s'\n", novo_serial);
+            Gerenciador_Config_Set_Serial(novo_serial);
+            sprintf(buffer_display, "Serial: %s", novo_serial);
+
+            if (DisplayHandler_StartSaveFeedback(TELA_SERVICO, buffer_display))
+            {
+                printf("Display: Serial salvo com sucesso.\r\n");
+            }
+        }
+    }
+}
+
+void Display_SetPrintingEnabled(bool is_enabled)
+{
+    s_printing_enabled = is_enabled;
+    printf("Display Handler: Impressao %s\r\n",
+           s_printing_enabled ? "HABILITADA" : "DESABILITADA");
+}
+
+bool Display_IsPrintingEnabled(void)
+{
+    return s_printing_enabled;
+}
+
+//================================================================================
+// Implementação das Funções Privadas (Lógica de Fundo)
+//================================================================================
+
+static void ProcessFeedbackFSM(void)
+{
+    switch (s_feedback_state)
+    {
+        case FB_STATE_IDLE:
+            break;
+
+        case FB_STATE_SHOW_SAVING:
+            Controller_SetScreen(MSG_ALERTA);
+            DWIN_Driver_WriteString(VP_MESSAGES, "Salvando...", 11);
+            s_feedback_timeout_tick = HAL_GetTick() + FEEDBACK_TIMEOUT_MS;
+            s_feedback_state = FB_STATE_WAIT_SAVE_DONE;
+            break;
+
+        case FB_STATE_WAIT_SAVE_DONE:
+            if (!Gerenciador_Config_Ha_Pendencias())
+            {
+                Controller_SetScreen(s_feedback_return_screen);
+                DWIN_Driver_WriteString(VP_MESSAGES,
+                                        s_feedback_success_msg,
+                                        strlen(s_feedback_success_msg));
+                s_feedback_state = FB_STATE_IDLE;
+            }
+            else if (Gerenciador_Config_GetAndClearErrorFlag())
+            {
+                Controller_SetScreen(MSG_ERROR);
+                DWIN_Driver_WriteString(VP_MESSAGES, "Erro ao salvar!", 15);
+                s_feedback_state = FB_STATE_IDLE;
+            }
+            else if (HAL_GetTick() > s_feedback_timeout_tick)
+            {
+                Controller_SetScreen(MSG_ERROR);
+                DWIN_Driver_WriteString(VP_MESSAGES, "Erro: Timeout!", 15);
+                s_feedback_state = FB_STATE_IDLE;
+            }
+            break;
+
+        default:
+            s_feedback_state = FB_STATE_IDLE;
+            break;
+    }
+}
+
+static void ProcessMeasurementSequenceFSM(void)
+{
+    if (s_mede_state == MEDE_STATE_IDLE)
+    {
+        return;
+    }
+
+    if ((HAL_GetTick() - s_mede_last_tick) < MEDE_INTERVAL_MS)
+    {
+        return;
+    }
+    s_mede_last_tick = HAL_GetTick();
+
+    switch (s_mede_state)
+    {
+        case MEDE_STATE_ENCHE_CAMARA:
+            s_mede_state = MEDE_STATE_AJUSTANDO;
+            Controller_SetScreen(MEDE_AJUSTANDO);
+            break;
+
+        case MEDE_STATE_AJUSTANDO:
+            s_mede_state = MEDE_STATE_RASPA_CAMARA;
+            Controller_SetScreen(MEDE_RASPA_CAMARA);
+            break;
+
+        case MEDE_STATE_RASPA_CAMARA:
+            s_mede_state = MEDE_STATE_PESO_AMOSTRA;
+            Controller_SetScreen(MEDE_PESO_AMOSTRA);
+            break;
+
+        case MEDE_STATE_PESO_AMOSTRA:
+            s_mede_state = MEDE_STATE_TEMP_SAMPLE;
+            Controller_SetScreen(MEDE_TEMP_SAMPLE);
+            break;
+
+        case MEDE_STATE_TEMP_SAMPLE:
+            s_mede_state = MEDE_STATE_UMIDADE;
+            Controller_SetScreen(MEDE_UMIDADE);
+            break;
+
+        case MEDE_STATE_UMIDADE:
+            s_mede_state = MEDE_STATE_MOSTRA_RESULTADO;
+            Display_ProcessPrintEvent(0x0000); // Mostrar resultado na tela
+            break;
+
+        case MEDE_STATE_MOSTRA_RESULTADO:
+            s_mede_state = MEDE_STATE_IDLE;
+            printf("DISPLAY: Sequencia de medicao finalizada.\r\n");
+            break;
+
+        default:
+            s_mede_state = MEDE_STATE_IDLE;
+            break;
+    }
+}
+
+static void UpdateMonitorScreen(void)
+{
+    if ((HAL_GetTick() - s_monitor_last_tick) < MONITOR_UPDATE_INTERVAL_MS)
+    {
+        return;
+    }
+    s_monitor_last_tick = HAL_GetTick();
+
+    uint16_t tela_atual = Controller_GetCurrentScreen();
+    if (tela_atual != TELA_MONITOR_SYSTEM &&
+        tela_atual != TELA_ADJUST_CAPA)
+    {
+        s_temp_update_counter = 0;
+        return;
+    }
+
+
+    DadosMedicao_t dados_atuais;
+    Medicao_Get_UltimaMedicao(&dados_atuais);
+
+    int32_t frequencia_para_dwin = (int32_t)(dados_atuais.Frequencia * 0.01f);
+    DWIN_Driver_WriteInt32(FREQUENCIA, frequencia_para_dwin);
+
+    int32_t escala_a_para_dwin = (int32_t)(dados_atuais.Escala_A * 10.0f);
+    DWIN_Driver_WriteInt32(ESCALA_A, escala_a_para_dwin);
+
+    s_temp_update_counter++;
+    if (s_temp_update_counter >= TEMP_UPDATE_PERIOD_SECONDS)
+    {
+        s_temp_update_counter = 0;
+        float temp_mcu = TempSensor_GetTemperature();
+        Medicao_Set_Temp_Instru(temp_mcu);
+
+        int16_t temperatura_para_dwin = (int16_t)(temp_mcu * 10.0f);
+        DWIN_Driver_WriteInt(TEMP_INSTRU, temperatura_para_dwin);
+    }
+}
+
+static void UpdateClockOnMainScreen(void)
+{
+    if ((HAL_GetTick() - s_clock_last_tick) < CLOCK_UPDATE_INTERVAL_MS)
+    {
+        return;
+    }
+    s_clock_last_tick = HAL_GetTick();
+
+    switch (Controller_GetCurrentScreen())
+    {
+        case PRINCIPAL:
+        case MEDE_RESULT_01:
+        case MEDE_RESULT_02:
+        case TELA_SET_JUST_TIME:
+        case TELA_ABOUT_SYSTEM:
+        case TELA_ADJUST_TIME:
+        {
+            uint8_t h, m, s, d, mo, y;
+            char weekday_dummy[4];
+
+            if (RTC_Driver_GetTime(&h, &m, &s) &&
+                RTC_Driver_GetDate(&d, &mo, &y, weekday_dummy))
+            {
+                uint8_t rtc_command[] = {
+                    0x5A, 0xA5,                     // Cabeçalho
+                    0x0B,                           // Comprimento
+                    0x82,                           // Comando de escrita
+                    (uint8_t)(VP_DATA_HORA >> 8),   // VP MSB
+                    (uint8_t)(VP_DATA_HORA & 0xFF), // VP LSB
+                    y,                              // Ano
+                    mo,                             // Mês
+                    d,                              // Dia
+                    0x03,                           // Dia da semana (fixo/placeholder)
+                    h,                              // Hora
+                    m,                              // Minuto
+                    s,                              // Segundo
+                    0x00                            // Reservado
+                };
+                DWIN_Driver_WriteRawBytes(rtc_command, sizeof(rtc_command));
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
