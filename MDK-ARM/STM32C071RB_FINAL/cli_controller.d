@@ -41,5 +41,4 @@ stm32c071rb_final/cli_controller.o: ..\Core\Src\cli_controller.c \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h \
   ..\Core\Inc\rtc_driver.h ..\Core\Inc\rtc.h \
   ..\Core\Inc\medicao_handler.h ..\Core\Inc\temp_sensor.h \
-  ..\Core\Inc\relato.h ..\Core\Inc\gerenciador_configuracoes.h \
-  ..\Core\Inc\eeprom_driver.h
+  ..\Core\Inc\relato.h

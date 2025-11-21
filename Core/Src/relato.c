@@ -1,3 +1,13 @@
+/*
+ * Nome do Arquivo: relato.c
+ * Descrição: Implementação da formatação de relatórios Who_am_i e Medição
+ * Autor: Gabriel Agune
+ */
+
+// ============================================================
+// Includes
+// ============================================================
+
 #include "relato.h"
 #include "gerenciador_configuracoes.h"
 #include "medicao_handler.h"
@@ -6,21 +16,33 @@
 #include "cli_driver.h"
 #include <stdio.h>
 
+// ============================================================
+// Variáveis Privadas e Constantes de Formatação
+// ============================================================
 
 static char qr_buffer[400];
-// Constantes para formatação (colocadas em Flash/ROM, não consomem RAM)
+
+// Constantes de formatação para impressora
 const char Ejeta[] = "================================\n\r\n\r\n\r\n\r";
 const char Dupla[] = "\n\r================================\n\r";
 const char Linha[] = "--------------------------------\n\r";
 
+// ============================================================
+// Protótipos de Funções Públicas (Para uso interno do módulo)
+// ============================================================
 
-void Who_am_i(void)
-{
-    // MOVIDO: de global para local. A memória é alocada na stack e liberada ao sair.
-		char serial[17];
-    Gerenciador_Config_Get_Serial(
-		serial, sizeof(serial));
-		
+void Cabecalho(void);
+void Assinatura(void);
+
+// ============================================================
+// Funções Públicas
+// ============================================================
+
+// Imprime informações de identificação do dispositivo (CLI/Impressora)
+void Who_am_i(void) {
+    char serial[17];
+    Gerenciador_Config_Get_Serial(serial, sizeof(serial));
+
     printf(Dupla);
     printf("         G620_Teste_Gab\n\r");
     printf("     (c) GEHAKA, 2004-2025\n\r");
@@ -34,41 +56,8 @@ void Who_am_i(void)
     printf(Ejeta);
 }
 
-void Assinatura(void)
-{
-    uint8_t hours, minutes, seconds;
-    uint8_t day, month, year;
-    char weekday_dummy[4];
-
-    printf("\n\r\n\r");
-    printf(Linha);
-    if (RTC_Driver_GetTime(&hours, &minutes, &seconds))
-    {
-        printf("Assinatura              %02d:%02d:%02d\n\r", hours, minutes, seconds);
-    }
-    if (RTC_Driver_GetDate(&day, &month, &year, weekday_dummy))
-    {
-        printf("Responsavel             %02d/%02d/%02d\n\r", day, month, year);
-    }
-    printf ("\n\r\n\r\n\r\n\r");
-}
-
-void Cabecalho(void)
-{
-    // Evita copiar toda a Config_Aplicacao_t para a pilha.
-    char serial[17] = {0};
-    Gerenciador_Config_Get_Serial(serial, sizeof(serial));
-
-    printf(Dupla);
-		printf("GEHAKA            G620_Teste_Gab\n\r");
-    printf(Linha);
-	  printf("Versao Firmware= %15s\n\r", FIRMWARE);
-		printf("Numero de Serie= %15s\n\r", serial);
-    printf(Linha);
-}
-void Relatorio_Printer (void)
-{
-    // Evita alocar Config_Aplicacao_t (~6KB) na pilha. Busque apenas o necess?rio.
+// Gera e envia o relatório formatado para a impressora
+void Relatorio_Printer (void) {
     uint16_t nr_decimals = Gerenciador_Config_Get_NR_Decimals();
 
     uint8_t indice_grao_ativo = 0;
@@ -82,14 +71,14 @@ void Relatorio_Printer (void)
 
     Cabecalho();
 
-    printf("Produto       = %16s\n\r",  dados_grao_ativo.nome);
-  	printf("Versao Equacao= %10lu\n\r",   (unsigned long)dados_grao_ativo.id_curva);
+    printf("Produto       = %16s\n\r", dados_grao_ativo.nome);
+  	printf("Versao Equacao= %10lu\n\r", (unsigned long)dados_grao_ativo.id_curva);
   	printf("Validade Curva= %13s\n\r", dados_grao_ativo.validade);
-  	printf("Amostra Numero= %8i\n\r",      4);
+  	printf("Amostra Numero= %8i\n\r", 4);
   	printf("Temp.Amostra .= %8.1f 'C\n\r", 22.0);
   	printf("Temp.Instru ..= %8.1f 'C\n\r", medicao_snapshot.Temp_Instru);
   	printf("Peso Amostra .= %8.1f g\n\r", medicao_snapshot.Peso);
-  	printf("Densidade ....= %8.1f Kg/hL\n\r",  medicao_snapshot.Densidade);
+  	printf("Densidade ....= %8.1f Kg/hL\n\r", medicao_snapshot.Densidade);
     printf(Linha);
   	printf("Umidade ......= %14.*f %%\n\r", (int)nr_decimals, medicao_snapshot.Umidade);
   	printf(Linha);
@@ -97,8 +86,8 @@ void Relatorio_Printer (void)
   	Assinatura();
 }
 
-void Relatorio_QRCode_WhoAmI(void)
-{
+// Gera a string formatada para o QR Code e a envia ao display
+void Relatorio_QRCode_WhoAmI(void) {
     char serial[17];
     Gerenciador_Config_Get_Serial(serial, sizeof(serial));
 
@@ -135,7 +124,7 @@ void Relatorio_QRCode_WhoAmI(void)
                      MAX_NOME_GRAO_LEN, grao.nome,
 										 (int)nr_decimals, dados.Umidade,
                      (unsigned long)grao.id_curva,
-                     4,             
+                     4,
                      dados.Temp_Instru,
                      dados.Peso,
                      dados.Densidade,
@@ -143,5 +132,39 @@ void Relatorio_QRCode_WhoAmI(void)
                      dd, mo, yy,
                      hh, mm, ss);
 
-    (void)DWIN_Driver_WriteString(RESULTADO_MEDIDA, qr_buffer, sizeof(qr_buffer));
+    DWIN_Driver_WriteString(RESULTADO_MEDIDA, qr_buffer, sizeof(qr_buffer));
+}
+
+// ============================================================
+// Funções Auxiliares (Impressora)
+// ============================================================
+
+// Imprime o cabeçalho do relatório
+void Cabecalho(void) {
+    char serial[17] = {0};
+    Gerenciador_Config_Get_Serial(serial, sizeof(serial));
+
+    printf(Dupla);
+		printf("GEHAKA            G620_Teste_Gab\n\r");
+    printf(Linha);
+		printf("Versao Firmware= %15s\n\r", FIRMWARE);
+		printf("Numero de Serie= %15s\n\r", serial);
+    printf(Linha);
+}
+
+// Imprime o rodapé com data e responsável
+void Assinatura(void) {
+    uint8_t hours, minutes, seconds;
+    uint8_t day, month, year;
+    char weekday_dummy[4];
+
+    printf("\n\r\n\r");
+    printf(Linha);
+    if (RTC_Driver_GetTime(&hours, &minutes, &seconds)) {
+        printf("Assinatura              %02d:%02d:%02d\n\r", hours, minutes, seconds);
+    }
+    if (RTC_Driver_GetDate(&day, &month, &year, weekday_dummy)) {
+        printf("Responsavel             %02d/%02d/%02d\n\r", day, month, year);
+    }
+    printf ("\n\r\n\r\n\r\n\r");
 }

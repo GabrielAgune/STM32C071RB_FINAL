@@ -43,7 +43,4 @@ void CLI_Receive_Char(uint8_t received_char);
 // Verifica se o host USB está conectado e a classe CDC ativa
 bool CLI_Is_USB_Connected(void);
 
-// Função de compatibilidade (atualmente sem operação, mantida para legado)
-void CLI_Process(void);
-
 #endif // CLI_DRIVER_H

@@ -21,11 +21,9 @@
 #include "gerenciador_configuracoes.h"
 #include "medicao_handler.h"
 #include "rtc_driver.h"
-#include "ux_api.h"
-#include "ux_device_stack.h"
-#include "usb.h"
-#include "app_usbx_device.h"
 #include "battery_handler.h"
+#include <string.h>
+#include <stdio.h>
 
 // ============================================================
 // Variáveis Externas
@@ -88,7 +86,6 @@ void App_Manager_Init(void) {
 // Loop principal de processamento da aplicação
 void App_Manager_Process(void) {
     Battery_Handler_Process();
-    CLI_Process();
     DWIN_Driver_Process();
     Gerenciador_Config_Run_FSM();
     Servos_Process();
@@ -151,7 +148,6 @@ static bool Test_Capacimetro(void) {
 
 // Executa a tara da balança para verificação funcional
 static bool Test_Balanca(void) {
-    ADS1232_Tare();
     return true;
 }
 

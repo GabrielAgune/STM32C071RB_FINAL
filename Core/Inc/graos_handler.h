@@ -1,39 +1,48 @@
+/*
+ * Nome do Arquivo: graos_handler.h
+ * Descrição: Interface para o módulo de gerenciamento de seleção de grãos, pesquisa e paginação
+ * Autor: Gabriel Agune
+ */
+
 #ifndef GRAOS_HANDLER_H
 #define GRAOS_HANDLER_H
+
+// ============================================================
+// Includes
+// ============================================================
 
 #include <stdint.h>
 #include <stdbool.h>
 
+// ============================================================
+// Protótipos de Funções Públicas
+// ============================================================
 
-/**
- * @brief Processa o evento de entrada na tela de sele??o de gr?os.
- * Orquestra a inicializa??o da l?gica e a atualiza??o da UI.
- */
+// Processa o evento de entrada na tela de seleção de grãos
 void Graos_Handle_Entrada_Tela(void);
 
-/**
- * @brief Processa um evento de navega??o (tecla) na tela de sele??o.
- * Orquestra a execu??o da l?gica de navega??o e a atualiza??o da UI.
- * @param tecla O c?digo da tecla recebida do DWIN.
- */
+// Processa um evento de navegação (tecla) na tela de seleção
 void Graos_Handle_Navegacao(int16_t tecla);
 
-/**
- * @brief Verifica se a l?gica de sele??o de gr?os est? ativa.
- * @return true se a tela de sele??o estiver ativa, false caso contr?rio.
- */
-bool Graos_Esta_Em_Tela_Selecao(void);
-
-void Graos_Exibir_Resultados_Pesquisa(void);
-void Graos_Executar_Pesquisa(const char* termo_pesquisa);
-void Graos_Confirmar_Selecao_Pesquisa(uint8_t slot_selecionado);
-void Graos_Limpar_Resultados_Pesquisa(void);;
-
+// Trata o evento de recebimento de texto de pesquisa do DWIN
 void Graos_Handle_Pesquisa_Texto(const uint8_t* data, uint16_t len);
 
-/**
- * @brief (NOVA FUN??O) Trata o evento de clique no bot?o de mudan?a de p?gina.
- */
+// Trata o evento de clique no botão de mudança de página
 void Graos_Handle_Page_Change(void);
+
+// Verifica se a lógica de seleção de grãos está ativa
+bool Graos_Esta_Em_Tela_Selecao(void);
+
+// Exibe os resultados da pesquisa na tela atual
+void Graos_Exibir_Resultados_Pesquisa(void);
+
+// Executa a lógica de pesquisa de grãos baseado em um termo
+void Graos_Executar_Pesquisa(const char* termo_pesquisa);
+
+// Confirma a seleção de um grão a partir de um slot de resultado
+void Graos_Confirmar_Selecao_Pesquisa(uint8_t slot_selecionado);
+
+// Limpa todas as variáveis de estado de pesquisa e paginação
+void Graos_Limpar_Resultados_Pesquisa(void);
 
 #endif // GRAOS_HANDLER_H

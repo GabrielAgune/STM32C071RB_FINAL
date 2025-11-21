@@ -1,22 +1,33 @@
+/*
+ * Nome do Arquivo: battery_handler.h
+ * Descrição: Gerenciador de aplicação para bateria e interface com Display
+ * Autor: Gabriel Agune
+ */
+
 #ifndef BATTERY_HANDLER_H
 #define BATTERY_HANDLER_H
 
-#include "main.h"
+// ============================================================
+// Includes
+// ============================================================
+
 #include "i2c.h"
 
-// Define a capacidade da sua bateria aqui para fácil configuração
-#define BATTERY_CAPACITY_MAH 2600
+// ============================================================
+// Defines de Configuração
+// ============================================================
 
-/**
- * @brief Inicializa o handler da bateria, o driver do BQ25622 e o módulo SOC.
- * @param hi2c Ponteiro para o handle I2C.
- */
+// Define a capacidade da bateria para o algoritmo de Coulomb Counting
+#define BATTERY_CAPACITY_MAH    2600
+
+// ============================================================
+// Protótipos de Funções Públicas
+// ============================================================
+
+// Inicializa o handler, drivers do BQ25622 e módulo de SoC
 void Battery_Handler_Init(I2C_HandleTypeDef *hi2c);
 
-/**
- * @brief Processa a lógica de atualização do SOC e da tela de bateria.
- *        Deve ser chamado continuamente no loop principal.
- */
+// Processa a lógica de SoC e atualiza a UI (chamar no loop principal)
 void Battery_Handler_Process(void);
 
 #endif // BATTERY_HANDLER_H

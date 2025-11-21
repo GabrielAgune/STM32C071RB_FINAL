@@ -40,5 +40,4 @@ stm32c071rb_final/autenticacao_handler.o: \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_usb.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h \
   ..\Core\Inc\controller.h ..\Core\Inc\dwin_parser.h \
-  ..\Core\Inc\gerenciador_configuracoes.h ..\Core\Inc\eeprom_driver.h \
-  ..\Core\Inc\display_handler.h ..\Core\Inc\display_map.h
+  ..\Core\Inc\gerenciador_configuracoes.h ..\Core\Inc\display_handler.h

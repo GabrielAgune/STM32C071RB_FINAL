@@ -37,6 +37,6 @@ stm32c071rb_final/relato.o: ..\Core\Src\relato.c ..\Core\Inc\relato.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_usb.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h \
-  ..\Core\Inc\gerenciador_configuracoes.h ..\Core\Inc\eeprom_driver.h \
-  ..\Core\Inc\medicao_handler.h ..\Core\Inc\rtc_driver.h \
-  ..\Core\Inc\rtc.h ..\Core\Inc\dwin_driver.h ..\Core\Inc\cli_driver.h
+  ..\Core\Inc\gerenciador_configuracoes.h ..\Core\Inc\medicao_handler.h \
+  ..\Core\Inc\rtc_driver.h ..\Core\Inc\rtc.h ..\Core\Inc\dwin_driver.h \
+  ..\Core\Inc\cli_driver.h

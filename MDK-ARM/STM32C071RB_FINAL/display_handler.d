@@ -1,7 +1,6 @@
 stm32c071rb_final/display_handler.o: ..\Core\Src\display_handler.c \
-  ..\Core\Inc\display_handler.h ..\Core\Inc\display_map.h \
-  ..\Core\Inc\dwin_driver.h ..\Core\Inc\main.h \
-  ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal.h \
+  ..\Core\Inc\display_handler.h ..\Core\Inc\dwin_driver.h \
+  ..\Core\Inc\main.h ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_system.h \
   ..\Drivers\CMSIS\Device\ST\STM32C0xx\Include\stm32c0xx.h \
   ..\Drivers\CMSIS\Device\ST\STM32C0xx\Include\stm32c071xx.h \
@@ -40,6 +39,6 @@ stm32c071rb_final/display_handler.o: ..\Core\Src\display_handler.c \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_usb.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h \
   ..\Core\Inc\controller.h ..\Core\Inc\gerenciador_configuracoes.h \
-  ..\Core\Inc\eeprom_driver.h ..\Core\Inc\medicao_handler.h \
-  ..\Core\Inc\rtc_driver.h ..\Core\Inc\rtc.h ..\Core\Inc\temp_sensor.h \
-  ..\Core\Inc\dwin_parser.h ..\Core\Inc\relato.h
+  ..\Core\Inc\medicao_handler.h ..\Core\Inc\rtc_driver.h \
+  ..\Core\Inc\rtc.h ..\Core\Inc\relato.h ..\Core\Inc\temp_sensor.h \
+  ..\Core\Inc\dwin_parser.h

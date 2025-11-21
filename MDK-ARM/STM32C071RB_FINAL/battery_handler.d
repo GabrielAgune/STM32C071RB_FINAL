@@ -1,5 +1,5 @@
 stm32c071rb_final/battery_handler.o: ..\Core\Src\battery_handler.c \
-  ..\Core\Inc\battery_handler.h ..\Core\Inc\main.h \
+  ..\Core\Inc\battery_handler.h ..\Core\Inc\i2c.h ..\Core\Inc\main.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_system.h \
   ..\Drivers\CMSIS\Device\ST\STM32C0xx\Include\stm32c0xx.h \
@@ -38,6 +38,6 @@ stm32c071rb_final/battery_handler.o: ..\Core\Src\battery_handler.c \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_usb.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h \
-  ..\Core\Inc\i2c.h ..\Core\Inc\bq25622_driver.h ..\Core\Inc\bq_soc.h \
+  ..\Core\Inc\bq25622_driver.h ..\Core\Inc\bq_soc.h \
   ..\Core\Inc\dwin_driver.h ..\Core\Inc\controller.h \
   ..\Core\Inc\cli_driver.h

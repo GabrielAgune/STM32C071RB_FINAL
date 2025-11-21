@@ -39,9 +39,8 @@ stm32c071rb_final/controller.o: ..\Core\Src\controller.c \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_usb.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h \
   ..\Core\Inc\dwin_driver.h ..\Core\Inc\rtc.h ..\Core\Inc\rtc_driver.h \
-  ..\Core\Inc\gerenciador_configuracoes.h ..\Core\Inc\eeprom_driver.h \
+  ..\Core\Inc\gerenciador_configuracoes.h \
   ..\Core\Inc\autenticacao_handler.h ..\Core\Inc\battery_handler.h \
-  ..\Core\Inc\i2c.h ..\Core\Inc\rtc_handler.h ..\Core\Inc\dwin_parser.h \
-  ..\Core\Inc\display_handler.h ..\Core\Inc\display_map.h \
-  ..\Core\Inc\graos_handler.h ..\Core\Inc\app_manager.h \
-  ..\Core\Inc\relato.h ..\Core\Inc\medicao_handler.h
+  ..\Core\Inc\i2c.h ..\Core\Inc\rtc_handler.h \
+  ..\Core\Inc\display_handler.h ..\Core\Inc\graos_handler.h \
+  ..\Core\Inc\app_manager.h ..\Core\Inc\relato.h

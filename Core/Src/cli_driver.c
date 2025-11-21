@@ -16,8 +16,8 @@
 // ============================================================
 
 #define CLI_TX_FIFO_SIZE        1536
-#define CLI_BUFFER_SIZE         256
-#define CLI_USB_MAX_PKT         64      // Ajustado para padrão FS (geralmente 64, não 6)
+#define CLI_BUFFER_SIZE        	 256
+#define CLI_USB_MAX_PKT         	64      
 
 // ============================================================
 // Variáveis Externas
@@ -168,9 +168,4 @@ void CLI_Receive_Char(uint8_t received_char) {
         char echo[2] = { (char)received_char, '\0' };
         CLI_Puts(echo);
     }
-}
-
-// Função legada (mantida para compatibilidade de API)
-void CLI_Process(void) {
-    // O processamento agora é feito via callback imediato em CLI_Receive_Char
 }

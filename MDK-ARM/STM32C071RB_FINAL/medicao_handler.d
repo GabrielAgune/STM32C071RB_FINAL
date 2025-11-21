@@ -38,5 +38,4 @@ stm32c071rb_final/medicao_handler.o: ..\Core\Src\medicao_handler.c \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_usb.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h \
-  ..\Core\Inc\pcb_frequency.h ..\Core\Inc\gerenciador_configuracoes.h \
-  ..\Core\Inc\eeprom_driver.h
+  ..\Core\Inc\pcb_frequency.h ..\Core\Inc\gerenciador_configuracoes.h

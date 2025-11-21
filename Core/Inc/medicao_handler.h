@@ -1,19 +1,24 @@
-/*******************************************************************************
- * @file        medicao_handler.h
- * @brief       Interface do Handler de Medies.
- * @version     2.0 
- * @author      Gabriel Agune
- * @details     Centraliza toda a lgica de aquisio e clculo de dados de
- * medio (peso, frequncia, temperatura, etc.).
- ******************************************************************************/
+/*
+ * Nome do Arquivo: medicao_handler.h
+ * Descrição: Interface do Handler central para aquisição e cálculo de medições
+ * Autor: Gabriel Agune
+ */
 
 #ifndef MEDICAO_HANDLER_H
 #define MEDICAO_HANDLER_H
 
+// ============================================================
+// Includes
+// ============================================================
+
 #include <stdint.h>
 #include <stdbool.h>
 
-// Estrutura de dados que armazena a ltima medio completa.
+// ============================================================
+// Typedefs e Estruturas
+// ============================================================
+
+// Estrutura de dados que armazena a última medição completa
 typedef struct {
     float Peso;
     float Frequencia;
@@ -23,39 +28,26 @@ typedef struct {
     float Umidade;
 } DadosMedicao_t;
 
-/**
- * @brief Inicializa o handler de medio.
- */
+// ============================================================
+// Protótipos de Funções Públicas
+// ============================================================
+
+// Inicializa o handler de medição
 void Medicao_Init(void);
 
-/**
- * @brief Processa as lgicas de medio que devem rodar no super-loop.
- * Isso inclui a leitura da balana e a atualizao peridica da frequncia.
- */
+// Processa as lógicas de medição (leitura de balança e frequência)
 void Medicao_Process(void);
 
-/**
- * @brief Obtm uma cpia da ltima medio consolidada.
- * @param[out] dados Ponteiro para a estrutura onde os dados sero copiados.
- */
+// Obtém uma cópia da última medição consolidada
 void Medicao_Get_UltimaMedicao(DadosMedicao_t* dados);
 
-// --- Funes de atualizao para valores definidos externamente ---
-
-/**
- * @brief Atualiza a temperatura do instrumento lida pelo sensor do MCU.
- */
+// Atualiza a temperatura do instrumento lida pelo sensor do MCU
 void Medicao_Set_Temp_Instru(float temp_instru);
 
-/**
- * @brief Define a densidade do gro atual (usado para clculos futuros).
- */
+// Define a densidade do grão atual (usado para cálculos futuros)
 void Medicao_Set_Densidade(float densidade);
 
-/**
- * @brief Define a umidade do gro atual (usado para clculos futuros).
- */
+// Define a umidade do grão atual (usado para cálculos futuros)
 void Medicao_Set_Umidade(float umidade);
-
 
 #endif // MEDICAO_HANDLER_H
