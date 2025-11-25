@@ -1,6 +1,6 @@
-stm32c071rb_final/app_manager.o: ..\Core\Src\app_manager.c \
-  ..\Core\Inc\app_manager.h ..\Core\Inc\scheduler.h ..\Core\Inc\usart.h \
-  ..\Core\Inc\main.h ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal.h \
+stm32c071rb_final/scheduler.o: ..\Core\Src\scheduler.c \
+  ..\Core\Inc\scheduler.h ..\Core\Inc\main.h \
+  ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_system.h \
   ..\Drivers\CMSIS\Device\ST\STM32C0xx\Include\stm32c0xx.h \
   ..\Drivers\CMSIS\Device\ST\STM32C0xx\Include\stm32c071xx.h \
@@ -37,12 +37,4 @@ stm32c071rb_final/app_manager.o: ..\Core\Src\app_manager.c \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_uart_ex.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd.h \
   ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_ll_usb.h \
-  ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h \
-  ..\Core\Inc\rtc.h ..\Core\Inc\crc.h ..\Core\Inc\dwin_driver.h \
-  ..\Core\Inc\display_handler.h ..\Core\Inc\pwm_servo_driver.h \
-  ..\Core\Inc\cli_driver.h ..\Core\Inc\eeprom_driver.h \
-  ..\Core\Inc\ads1232_driver.h ..\Core\Inc\pcb_frequency.h \
-  ..\Core\Inc\temp_sensor.h ..\Core\Inc\servo_controle.h \
-  ..\Core\Inc\controller.h ..\Core\Inc\gerenciador_configuracoes.h \
-  ..\Core\Inc\medicao_handler.h ..\Core\Inc\rtc_driver.h \
-  ..\Core\Inc\battery_handler.h ..\Core\Inc\i2c.h
+  ..\Drivers\STM32C0xx_HAL_Driver\Inc\stm32c0xx_hal_pcd_ex.h

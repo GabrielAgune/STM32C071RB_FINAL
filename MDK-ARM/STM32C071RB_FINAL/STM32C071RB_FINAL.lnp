@@ -143,6 +143,7 @@
 "stm32c071rb_final\controller.o"
 "stm32c071rb_final\relato.o"
 "stm32c071rb_final\cli_controller.o"
+"stm32c071rb_final\scheduler.o"
 "stm32c071rb_final\dwin_parser.o"
 "stm32c071rb_final\autenticacao_handler.o"
 "stm32c071rb_final\battery_handler.o"

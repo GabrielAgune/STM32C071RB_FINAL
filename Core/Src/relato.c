@@ -121,7 +121,7 @@ void Relatorio_QRCode_WhoAmI(void) {
 										 "===================\n\r"
                      "Data: %02u/%02u/%02u\n"
                      "Hora: %02u:%02u:%02u",
-                     MAX_NOME_GRAO_LEN, grao.nome,
+                     MAX_NOME_GRAO_LEN, grao.nome, 
 										 (int)nr_decimals, dados.Umidade,
                      (unsigned long)grao.id_curva,
                      4,

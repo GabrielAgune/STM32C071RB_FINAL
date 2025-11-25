@@ -121,6 +121,7 @@ void Display_ProcessPrintEvent(uint16_t received_value) {
         DWIN_Driver_WriteInt(CURVA, dados_grao.id_curva);
         DWIN_Driver_WriteInt(UMI_MIN, (int16_t)(dados_grao.umidade_min * 10));
         DWIN_Driver_WriteInt(UMI_MAX, (int16_t)(dados_grao.umidade_max * 10));
+				DWIN_Driver_WriteString(DATA_VAL, dados_grao.validade, sizeof(dados_grao.validade));
 
         if (casas_decimais == 1) {
             DWIN_Driver_WriteInt(UMIDADE_1_CASA, (int16_t)(dados_medicao.Umidade * 10.0f));
